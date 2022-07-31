@@ -32,17 +32,15 @@ impl<const N: usize> Base<N> {
 
     pub fn encode_const_len<const LEN: usize, T: ConstLen<LEN>>(&self, t: &T) -> String {
         let const_len = Self::const_len::<LEN>();
-        let encoded = vec![0; const_len];
-        self.encode_into(&t.to_bytes(), encoded)
+        let raw = Self::encode_into_raw(&t.to_bytes(), vec![0; const_len]);
+        self.encode_raw_into(raw)
     }
 
     pub fn decode_const_len<const LEN: usize, T: ConstLen<LEN>>(&self, s: &str) -> Option<T> {
         if s.len() != Self::const_len::<LEN>() {
             return None;
         }
-        let mut bytes = [0; LEN];
-        self.decode_into(s, &mut bytes)?;
-        Some(T::from_bytes(bytes))
+        self.decode_var_len(s)
     }
 
     pub fn const_len<const LEN: usize>() -> usize {
@@ -53,11 +51,15 @@ impl<const N: usize> Base<N> {
     }
 
     pub fn encode_var_len<const LEN: usize, T: ConstLen<LEN>>(&self, t: &T) -> String {
-        todo!()
+        let mut raw = Self::encode_into_raw(&t.to_bytes(), vec![0; Self::len_upper_bound(LEN)]);
+        drain_leading_zeros(&mut raw);
+        self.encode_raw_into(raw)
     }
 
     pub fn decode_var_len<const LEN: usize, T: ConstLen<LEN>>(&self, s: &str) -> Option<T> {
-        todo!()
+        let mut bytes = [0; LEN];
+        self.decode_into(s, &mut bytes)?;
+        Some(T::from_bytes(bytes))
     }
 
     fn encode_into_raw(input: &[u8], mut output: Vec<u8>) -> Vec<u8> {
@@ -80,14 +82,12 @@ impl<const N: usize> Base<N> {
         output
     }
 
-    fn encode_into(&self, input: &[u8], output: Vec<u8>) -> String {
-        let mut output = Self::encode_into_raw(input, output);
-
-        for val in &mut output {
+    fn encode_raw_into(&self, mut raw: Vec<u8>) -> String {
+        for val in &mut raw {
             *val = self.encode[*val as usize];
         }
 
-        String::from_utf8(output).unwrap()
+        String::from_utf8(raw).unwrap()
     }
 
     fn decode_into(&self, input: &str, output: &mut [u8]) -> Option<()> {
@@ -119,6 +119,11 @@ impl<const N: usize> Base<N> {
         let bits = 63 - N.leading_zeros() as usize;
         (len * 8 + (bits - 1)) / bits
     }
+}
+
+fn drain_leading_zeros(vec: &mut Vec<u8>) {
+    let zeros = vec.iter().take_while(|&&x| x == 0).count();
+    vec.drain(..zeros);
 }
 
 pub trait ConstLen<const LEN: usize> {

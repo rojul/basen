@@ -37,6 +37,7 @@ fn bounds() {
 #[test]
 fn decode_overflow() {
     assert_eq!(BASE58.decode_const_len("zzzzzzzzzzz"), None::<u64>);
+    assert_eq!(BASE58.decode_var_len("zzzzzzzzzzz"), None::<u64>);
 }
 
 #[test]
@@ -58,4 +59,17 @@ fn base58_512bit() {
         hex::<64>("1f78a149865616cdab285690e687cd9facdd1393a70faa0f6bf8c726c1f037b3bbc261c16182a4d62550af4c596cf44a658a64b8f1acc5dbafddb8d3dd7109e7"),
         "1dVfUxKg2Py5dJQSDgnJrZ7xiALQ5XgB3vww5Vibnqwf2MneQnALM5H8uqZUWwSywWAuHtU2Mx5J8LqwHAMiju8a",
     );
+}
+
+#[test]
+fn var_len() {
+    assert_eq!(BASE10.encode_var_len(&0u64), "");
+    assert_eq!(BASE10.decode_var_len(""), Some(0u64));
+    assert_eq!(BASE10.decode_var_len("0000"), Some(0u8));
+
+    assert_eq!(BASE10.encode_var_len(&1u64), "1");
+    assert_eq!(BASE10.decode_var_len("1"), Some(1u64));
+    assert_eq!(BASE10.decode_var_len("0001"), Some(1u8));
+
+    assert_eq!(BASE10.encode_var_len(&u64::MAX), u64::MAX.to_string());
 }
