@@ -6,7 +6,7 @@ where
     T: ConstLen<LEN> + Debug + PartialEq,
 {
     assert_eq!(base.encode_const_len(&bytes), str);
-    assert_eq!(base.decode_const_len::<LEN, T>(&str).unwrap(), bytes);
+    assert_eq!(base.decode_const_len(&str), Some(bytes));
 }
 
 fn hex<const LEN: usize>(s: &str) -> [u8; LEN] {

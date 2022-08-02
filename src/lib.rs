@@ -12,6 +12,7 @@ pub struct Base<const N: usize> {
 }
 
 impl<const N: usize> Base<N> {
+    /// Creates a new alphabet for encoding/decoding. Predefined alphabets are available as constants.
     pub const fn new(chars: &[u8; N]) -> Option<Self> {
         let encode = *chars;
         if encode.len() < 2 {
@@ -30,12 +31,28 @@ impl<const N: usize> Base<N> {
         Some(Self { encode, decode })
     }
 
+    /// Padded to the length required for the largest value.
+    ///
+    /// ```
+    /// # use basen::*;
+    /// assert_eq!(BASE10.encode_const_len(&0u8), "000");
+    /// assert_eq!(BASE10.encode_const_len(&1u8), "001");
+    /// assert_eq!(BASE10.encode_const_len(&255u8), "255");
+    /// ```
     pub fn encode_const_len<const LEN: usize, T: ConstLen<LEN>>(&self, t: &T) -> String {
         let const_len = Self::const_len::<LEN>();
         let raw = Self::encode_into_raw(&t.to_bytes(), vec![0; const_len]);
         self.encode_raw_into(raw)
     }
 
+    /// Requires the length required for the largest value.
+    ///
+    /// ```
+    /// # use basen::*;
+    /// assert_eq!(BASE10.decode_const_len("0"), None::<u8>);
+    /// assert_eq!(BASE10.decode_const_len("000"), Some(0u8));
+    /// assert_eq!(BASE10.decode_const_len("0000"), None::<u8>);
+    /// ```
     pub fn decode_const_len<const LEN: usize, T: ConstLen<LEN>>(&self, s: &str) -> Option<T> {
         if s.len() != Self::const_len::<LEN>() {
             return None;
@@ -43,6 +60,7 @@ impl<const N: usize> Base<N> {
         self.decode_var_len(s)
     }
 
+    /// Number of characters required to encode the largest value.
     pub fn const_len<const LEN: usize>() -> usize {
         let len_upper_bound = Self::len_upper_bound(LEN);
         let len = Self::encode_into_raw(&[255; LEN], Vec::with_capacity(len_upper_bound)).len();
@@ -50,12 +68,27 @@ impl<const N: usize> Base<N> {
         len
     }
 
+    /// Does not include leading zeros or padding.
+    ///
+    /// ```
+    /// # use basen::*;
+    /// assert_eq!(BASE10.encode_var_len(&0u8), "");
+    /// assert_eq!(BASE10.encode_var_len(&1u8), "1");
+    /// assert_eq!(BASE10.encode_var_len(&255u8), "255");
+    /// ```
     pub fn encode_var_len<const LEN: usize, T: ConstLen<LEN>>(&self, t: &T) -> String {
         let mut raw = Self::encode_into_raw(&t.to_bytes(), vec![0; Self::len_upper_bound(LEN)]);
         drain_leading_zeros(&mut raw);
         self.encode_raw_into(raw)
     }
 
+    /// Allows arbitrary leading zeros.
+    ///
+    /// ```
+    /// # use basen::*;
+    /// assert_eq!(BASE10.decode_var_len(""), Some(0u8));
+    /// assert_eq!(BASE10.decode_var_len("0000"), Some(0u8));
+    /// ```
     pub fn decode_var_len<const LEN: usize, T: ConstLen<LEN>>(&self, s: &str) -> Option<T> {
         let mut bytes = [0; LEN];
         self.decode_into(s, &mut bytes)?;

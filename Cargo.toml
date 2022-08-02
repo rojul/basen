@@ -2,5 +2,9 @@
 name = "basen"
 version = "0.1.0"
 edition = "2021"
+description = "Convert binary data to ASCII with a variety of supported bases."
+readme = "README.md"
+repository = "https://github.com/rojul/basen"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
